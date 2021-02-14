@@ -1,0 +1,87 @@
+server {
+    listen 80;
+    server_name localhost;
+
+    location / {
+        root   /usr/share/nginx/html;
+        index  index.html index.htm;
+    }
+
+    location /nifi/ {
+        proxy_pass http://nifi:8080/nifi/;
+
+        proxy_set_header    X-ProxyScheme http;
+        proxy_set_header    X-ProxyHost ${DOLLAR}http_host;
+        proxy_set_header    X-ProxyPort ${NGINX_EXTERNAL_PORT};
+        proxy_set_header    X-ProxyContextPath /;
+
+        root   html;
+        index  index.html index.htm;
+    }
+
+    location /nifi-api/ {
+
+        proxy_pass http://nifi:8080/nifi-api/;
+
+        proxy_set_header    X-ProxyScheme http;
+        proxy_set_header    X-ProxyHost ${DOLLAR}http_host;
+        proxy_set_header    X-ProxyPort ${NGINX_EXTERNAL_PORT};
+        proxy_set_header    X-ProxyContextPath /;
+    }
+
+    location /nifi-port- {
+        rewrite     ^ ${DOLLAR}request_uri;
+        rewrite     ^/nifi-port-(.*) ${DOLLAR}1 break;
+        return      400;
+
+        proxy_pass  http://nifi:${DOLLAR}uri;
+
+        proxy_set_header Host               ${DOLLAR}http_host;
+        proxy_set_header X-Real-IP          ${DOLLAR}remote_addr;
+        proxy_set_header X-Forwarded-For    ${DOLLAR}proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto  ${DOLLAR}scheme;
+    }
+
+    location /nifi-registry/ {
+        proxy_pass http://nifi-registry:18080/nifi-registry/;
+
+        proxy_set_header    X-ProxyScheme http;
+        proxy_set_header    X-ProxyHost ${DOLLAR}http_host;
+        proxy_set_header    X-ProxyPort ${NGINX_EXTERNAL_PORT};
+        proxy_set_header    X-ProxyContextPath /;
+
+        root   html;
+        index  index.html index.htm;
+    }
+
+    location /nifi-registry-api/ {
+        proxy_pass http://nifi-registry:18080/nifi-registry-api/;
+
+        proxy_set_header    X-ProxyScheme http;
+        proxy_set_header    X-ProxyHost ${DOLLAR}http_host;
+        proxy_set_header    X-ProxyPort ${NGINX_EXTERNAL_PORT};
+        proxy_set_header    X-ProxyContextPath /;
+    }
+
+    location /amqp/ {
+        proxy_pass  http://amqp:15672/;
+
+        proxy_set_header Host               ${DOLLAR}http_host;
+        proxy_set_header X-Real-IP          ${DOLLAR}remote_addr;
+        proxy_set_header X-Forwarded-For    ${DOLLAR}proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto  ${DOLLAR}scheme;
+    }
+
+    location /amqp/api/ {
+        rewrite     ^ ${DOLLAR}request_uri;
+        rewrite     ^/amqp/api/(.*) /api/${DOLLAR}1 break;
+        return      400;
+
+        proxy_pass  http://amqp:15672${DOLLAR}uri;
+
+        proxy_set_header Host               ${DOLLAR}http_host;
+        proxy_set_header X-Real-IP          ${DOLLAR}remote_addr;
+        proxy_set_header X-Forwarded-For    ${DOLLAR}proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto  ${DOLLAR}scheme;
+    }
+}

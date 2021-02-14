@@ -1,0 +1,124 @@
+version: "3.7"
+services:
+  web:
+    image: nginx:1.19.6
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${NGINX_EXTERNAL_PORT}:80"
+    volumes:
+      - ./nginx-templates:/etc/nginx/templates
+    depends_on:
+      - nifi
+      - nifi-registry
+      - amqp
+  nifi:
+    image: apache/nifi:1.12.1
+    restart: unless-stopped
+    expose:
+      - "8080"
+      - "8081" # reserved for HandleHttpRequest processor
+      - "8082" # reserved for HandleHttpRequest processor
+      - "8083" # reserved for HandleHttpRequest processor
+      - "8084" # reserved for HandleHttpRequest processor
+      - "8085" # reserved for HandleHttpRequest processor
+      - "8086" # reserved for HandleHttpRequest processor
+      - "8087" # reserved for HandleHttpRequest processor
+      - "8088" # reserved for HandleHttpRequest processor
+      - "8089" # reserved for HandleHttpRequest processor
+    # ports:
+    #   - "8080:8080"
+    #   - "8081:8081" # reserved for HandleHttpRequest processor
+    #   - "8082:8082" # reserved for HandleHttpRequest processor
+    #   - "8083:8083" # reserved for HandleHttpRequest processor
+    #   - "8084:8084" # reserved for HandleHttpRequest processor
+    #   - "8085:8085" # reserved for HandleHttpRequest processor
+    #   - "8086:8086" # reserved for HandleHttpRequest processor
+    #   - "8087:8087" # reserved for HandleHttpRequest processor
+    #   - "8088:8088" # reserved for HandleHttpRequest processor
+    #   - "8089:8089" # reserved for HandleHttpRequest processor
+    volumes:
+      - ./in:/mnt/in
+      - ./out:/mnt/out
+      - nifi_conf:/opt/nifi/nifi-current/conf
+      - nifi_database_repository:/opt/nifi/nifi-current/database_repository
+      - nifi_flowfile_repository:/opt/nifi/nifi-current/flowfile_repository
+      - nifi_content_repository:/opt/nifi/nifi-current/content_repository
+      - nifi_provenance_repository:/opt/nifi/nifi-current/provenance_repository
+      - nifi_state:/opt/nifi/nifi-current/state
+      - nifi_logs:/opt/nifi/nifi-current/logs
+    depends_on:
+      - init
+      - nifi-registry
+      - amqp
+  nifi-registry:
+    image: apache/nifi-registry:0.8.0
+    restart: unless-stopped
+    expose:
+      - "18080"
+    # ports:
+    #   - "18080:18080"
+    volumes:
+      - nifi_registry_conf:/opt/nifi-registry/nifi-registry-current/conf
+      - nifi_registry_database:/opt/nifi-registry/nifi-registry-current/database
+      - nifi_registry_extension_bundles:/opt/nifi-registry/nifi-registry-current/extension_bundles
+      - nifi_registry_flow_storage:/opt/nifi-registry/nifi-registry-current/flow_storage
+      - nifi_registry_logs:/opt/nifi-registry/nifi-registry-current/logs
+    depends_on:
+      - init
+  amqp:
+    image: rabbitmq:3.8.9-management
+    restart: unless-stopped
+    environment:
+      - RABBITMQ_DEFAULT_USER=amqp
+      - RABBITMQ_DEFAULT_PASS=amqp
+    expose:
+      - "5672"
+      - "15672"
+    # ports:
+    #   - "5672:5672"
+    #   - "15672:15672"
+    volumes:
+      - amqp_data:/var/lib/rabbitmq
+  init:
+    image: busybox
+    command:
+      - sh
+      - -c
+      - |
+        chmod 777 /mnt/* \
+        && chown 1000:1000 /opt/nifi-registry/nifi-registry-current/*
+    volumes:
+      - ./in:/mnt/in
+      - ./out:/mnt/out
+      - nifi_registry_database:/opt/nifi-registry/nifi-registry-current/database
+      - nifi_registry_extension_bundles:/opt/nifi-registry/nifi-registry-current/extension_bundles
+      - nifi_registry_flow_storage:/opt/nifi-registry/nifi-registry-current/flow_storage
+      - nifi_registry_logs:/opt/nifi-registry/nifi-registry-current/logs
+volumes:
+  nifi_conf:
+    driver: local
+  nifi_database_repository:
+    driver: local
+  nifi_flowfile_repository:
+    driver: local
+  nifi_content_repository:
+    driver: local
+  nifi_provenance_repository:
+    driver: local
+  nifi_state:
+    driver: local
+  nifi_logs:
+    driver: local
+  nifi_registry_conf:
+    driver: local
+  nifi_registry_database:
+    driver: local
+  nifi_registry_extension_bundles:
+    driver: local
+  nifi_registry_flow_storage:
+    driver: local
+  nifi_registry_logs:
+    driver: local
+  amqp_data:
+    driver: local
